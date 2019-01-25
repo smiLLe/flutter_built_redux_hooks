@@ -2,6 +2,7 @@
 
 ios/
 android/
+*.iml
 
 .atom/
 .idea/
