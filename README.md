@@ -1,14 +1,29 @@
-# flutter_built_redux_hooks
+[![Build Status](https://travis-ci.org/smiLLe/flutter_built_redux_hooks.svg?branch=master)](https://travis-ci.org/smiLLe/flutter_built_redux_hooks)
 
-Adds flutter hooks for built redux
+## Usage
 
-## Getting Started
+`useReduxActions` usage:
 
-This project is a starting point for a Dart
-[package](https://flutter.io/developing-packages/),
-a library module containing code that can be shared easily across
-multiple Flutter or Dart projects.
+```dart
+HookBuilder(
+  builder: (context) {
+    MyActions actions = useReduxActions<MyActions>();
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.io/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+    return RaisedButton(
+        onPressed: () => actions.someAction(),
+        child: new Text('dispatch action'),
+    ),
+  },
+)
+```
+
+`useReduxActions` usage:
+
+```dart
+HookBuilder(
+  builder: (context) {
+    SubState sub = useReduxState<State, SubState>((s) => s.sub);
+    return Text(sub.textProp);
+  },
+)
+```
