@@ -1,5 +1,8 @@
 .DS_Store
 
+ios/
+android/
+
 .atom/
 .idea/
 

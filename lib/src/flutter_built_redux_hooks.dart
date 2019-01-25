@@ -7,7 +7,6 @@ class ReduxProvider extends InheritedWidget {
   ReduxProvider({Key key, @required this.store, @required Widget child})
       : super(key: key, child: child);
 
-  /// [store] is a reference to the redux store
   final Store store;
 
   @override
@@ -20,7 +19,7 @@ Store _useReduxStore() {
       context.inheritFromWidgetOfExactType(ReduxProvider);
 
   assert(reduxProvider != null,
-      'Store was not found, make sure ReduxProvider is an ancestor of this component.');
+      'Store was not found, make sure ReduxProvider is an ancestor of this hook');
 
   return reduxProvider.store;
 }
@@ -29,7 +28,7 @@ Actions useReduxActions<Actions extends ReduxActions>() {
   final store = _useReduxStore();
 
   assert(store.actions is Actions,
-      'Store found was not the correct type, make sure StoreConnector\'s generic for Actions matches the actions type of your built_redux store.');
+      'Actions was not found, make sure generic Actions matches built_redux store.actions');
 
   return store.actions as Actions;
 }
@@ -39,7 +38,7 @@ SubState useReduxState<State, SubState>(SubState connect(State state),
   final store = _useReduxStore();
 
   assert(store.state is State,
-      'Store found was not the correct type, make sure StoreConnector\'s generic for StoreState matches the state type of your built_redux store.');
+      'State was not found, make sure generic State matches built_redux store.state');
 
   SubState _state = connect(store.state as State);
 
