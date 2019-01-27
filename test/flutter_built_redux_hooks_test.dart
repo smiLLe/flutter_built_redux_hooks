@@ -263,4 +263,55 @@ void main() {
       expect(state.count, 1);
     });
   });
+
+  group('useReduxStateOnInitialBuildEffect', () {
+    testWidgets('execution order', (WidgetTester tester) async {
+      List<String> list = [];
+
+      await tester.pumpWidget(Provider(
+        store: store,
+        child: HookBuilder(
+          builder: (context) {
+            useReduxStateOnInitialBuildEffect<Counter>((state) {
+              list.add('b');
+            });
+
+            list.add('a');
+            return Container();
+          },
+        ),
+      ));
+
+      expect(list, ['a', 'b']);
+    });
+
+    testWidgets('executes only once', (WidgetTester tester) async {
+      List<String> list = [];
+
+      Widget widget() {
+        return Provider(
+          store: store,
+          child: HookBuilder(
+            builder: (context) {
+              useReduxStateOnInitialBuildEffect<Counter>((state) {
+                list.add('b');
+              });
+
+              list.add('a');
+              return Container();
+            },
+          ),
+        );
+      }
+
+      await tester.pumpWidget(widget());
+      expect(list, ['a', 'b']);
+
+      await tester.pumpWidget(widget());
+      expect(list, ['a', 'b', 'a']);
+
+      await tester.pumpWidget(widget());
+      expect(list, ['a', 'b', 'a', 'a']);
+    });
+  });
 }

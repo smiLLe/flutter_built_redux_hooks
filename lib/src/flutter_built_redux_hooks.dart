@@ -1,8 +1,7 @@
 import 'package:built_redux/built_redux.dart';
 import 'package:built_value/built_value.dart' as BV;
 import 'package:flutter/widgets.dart';
-import 'package:flutter_hooks/flutter_hooks.dart'
-    show useContext, useMemoized, useStream;
+import 'package:flutter_hooks/flutter_hooks.dart' hide Store;
 
 /// Provides a the Redux [Store] to all descendants of this Widget.
 /// Make this the root Widget of your app.
@@ -81,4 +80,22 @@ SubState useReduxState<State, SubState>(SubState connect(State state),
   );
 
   return data.data;
+}
+
+/// Executes the [effect] once, after the widget has built
+void useReduxStateOnInitialBuildEffect<State>(
+    VoidCallback effect(State state)) {
+  final state = useReduxState<State, State>((s) => s, ignoreChange: true);
+  useEffect(() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => effect(state));
+  }, []);
+}
+
+/// Executes the [effect] whenever the connected [SubState] changed
+void useReduxStateOnDidChangeEffect<State, SubState>(
+    SubState connect(State state), VoidCallback effect(SubState state)) {
+  final state = useReduxState(connect);
+  useEffect(() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => effect(state));
+  }, [state]);
 }
