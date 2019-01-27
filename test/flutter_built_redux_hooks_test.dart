@@ -36,6 +36,22 @@ void main() {
     expect(actions, store.actions);
   });
 
+  testWidgets('useReduxStore', (WidgetTester tester) async {
+    BR.Store<Counter, CounterBuilder, CounterActions> _store;
+
+    await tester.pumpWidget(Provider(
+      store: store,
+      child: HookBuilder(
+        builder: (context) {
+          _store = useReduxStore<Counter, CounterBuilder, CounterActions>();
+          return Container();
+        },
+      ),
+    ));
+
+    expect(store, _store);
+  });
+
   group('useReduxState', () {
     testWidgets('get complete state', (WidgetTester tester) async {
       Counter state;

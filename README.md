@@ -2,8 +2,20 @@
 
 ## Usage
 
-`useReduxActions` usage:
+`ReduxProvider` usage:
+```dart
+runApp(ReduxProvider(
+	store: new Store(
+      createReducer(),
+      State(),
+      StateActions(),
+    ),
+	child: child,
+));
+```
 
+
+`useReduxActions` usage:
 ```dart
 HookBuilder(
   builder: (context) {
@@ -18,7 +30,6 @@ HookBuilder(
 ```
 
 `useReduxActions` usage:
-
 ```dart
 HookBuilder(
   builder: (context) {
