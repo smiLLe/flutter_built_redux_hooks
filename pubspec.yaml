@@ -1,5 +1,5 @@
 name: flutter_built_redux_hooks
-description: Adds flutter hooks for built redux
+description: Set of hooks that provide or connect to your redux store
 version: 0.1.0
 author: Michael Braunbeck
 homepage: https://github.com/smiLLe/flutter_built_redux_hooks
