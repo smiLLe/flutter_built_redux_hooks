@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:built_redux/built_redux.dart';
 import 'package:built_value/built_value.dart' as BV;
 import 'package:flutter/widgets.dart';
@@ -103,19 +105,92 @@ SubState useReduxState<State, SubState>(SubState connect(State state),
 }
 
 /// Executes the [effect] once, after the widget has built
-void useReduxStateOnInitialBuildEffect<State>(
-    VoidCallback effect(State state)) {
-  final state = useReduxState<State, State>((s) => s, ignoreChange: true);
-  useEffect(() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => effect(state));
-  }, []);
+void useReduxStateOnInitialBuildEffect<State, SubState>(
+    SubState connect(State state), VoidCallback effect(SubState state)) {
+  useReduxStateEffect<State, SubState>(connect, onInitial: effect);
 }
 
 /// Executes the [effect] whenever the connected [SubState] changed
 void useReduxStateOnDidChangeEffect<State, SubState>(
     SubState connect(State state), VoidCallback effect(SubState state)) {
-  final state = useReduxState(connect);
-  useEffect(() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => effect(state));
-  }, [state]);
+  useReduxStateEffect<State, SubState>(connect, onDidChange: effect);
+}
+
+/// Executes callbacks whenever state changes
+void useReduxStateEffect<State, SubState>(
+  SubState connect(State state), {
+  VoidCallback onDidChange(SubState state),
+  VoidCallback onInitial(SubState state),
+  VoidCallback onDispose(),
+}) {
+  Hook.use(_ReduxStateCallbacksHook(
+    connect,
+    onDidChange: onDidChange,
+    onInitial: onInitial,
+    onDispose: onDispose,
+  ));
+}
+
+class _ReduxStateCallbacksHook<State, SubState> extends Hook<void> {
+  final SubState Function(State state) connect;
+
+  final void Function(SubState state) onInitial;
+  final void Function(SubState state) onDidChange;
+  final void Function() onDispose;
+
+  const _ReduxStateCallbacksHook(this.connect,
+      {this.onInitial, this.onDidChange, this.onDispose});
+
+  @override
+  _ReduxStateCallbacksHookState<State, SubState> createState() =>
+      _ReduxStateCallbacksHookState<State, SubState>();
+}
+
+class _ReduxStateCallbacksHookState<State, SubState>
+    extends HookState<void, _ReduxStateCallbacksHook<State, SubState>> {
+  Store _store;
+  StreamSubscription _subscription;
+
+  void _subscribe() {
+    _store = ReduxProvider.of(context);
+
+    if (null != hook.onInitial) {
+      WidgetsBinding.instance.addPostFrameCallback(
+          (_) => hook.onInitial(hook.connect(_store.state as State)));
+    }
+
+    if (null != hook.onDidChange) {
+      _subscription = _store
+          .substateStream((state) => hook.connect(state as State))
+          .map((s) => s.next)
+          .listen((s) => WidgetsBinding.instance
+              .addPostFrameCallback((_) => hook.onDidChange(s)));
+    }
+  }
+
+  void _unsubscribe() {
+    if (null != _subscription) {
+      _subscription.cancel();
+      _subscription = null;
+    }
+
+    if (null != hook.onDispose) {
+      hook.onDispose();
+    }
+  }
+
+  @override
+  void initHook() {
+    super.initHook();
+    _subscribe();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _unsubscribe();
+  }
+
+  @override
+  void build(BuildContext context) {}
 }

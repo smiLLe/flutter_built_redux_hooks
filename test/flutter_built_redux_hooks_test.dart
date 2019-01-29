@@ -272,7 +272,8 @@ void main() {
         store: store,
         child: HookBuilder(
           builder: (context) {
-            useReduxStateOnInitialBuildEffect<Counter>((state) {
+            useReduxStateOnInitialBuildEffect<Counter, Counter>((s) => s,
+                (state) {
               list.add('b');
             });
 
@@ -293,7 +294,8 @@ void main() {
           store: store,
           child: HookBuilder(
             builder: (context) {
-              useReduxStateOnInitialBuildEffect<Counter>((state) {
+              useReduxStateOnInitialBuildEffect<Counter, Counter>((s) => s,
+                  (state) {
                 list.add('b');
               });
 
@@ -312,6 +314,241 @@ void main() {
 
       await tester.pumpWidget(widget());
       expect(list, ['a', 'b', 'a', 'a']);
+    });
+  });
+
+  group('useReduxStateOnDidChangeEffect', () {
+    testWidgets('count builds', (WidgetTester tester) async {
+      int didChange = 0;
+
+      await tester.pumpWidget(Provider(
+        store: store,
+        child: HookBuilder(
+          builder: (context) {
+            useReduxStateOnDidChangeEffect<Counter, Counter>((s) => s, (s) {
+              didChange++;
+            });
+            final actions = useReduxActions<CounterActions>();
+
+            return Container(
+              child: Column(
+                children: <Widget>[
+                  RaisedButton(
+                    onPressed: actions.increment,
+                    child: new Text('Increment'),
+                    key: incrementButtonKey,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ));
+      expect(didChange, 0);
+
+      await tester.tap(find.byKey(incrementButtonKey));
+      await tester.pump();
+      expect(didChange, 1);
+
+      await tester.tap(find.byKey(incrementButtonKey));
+      await tester.pump();
+      expect(didChange, 2);
+    });
+
+    testWidgets('doest not rebuild widget', (WidgetTester tester) async {
+      int didChange = 0;
+
+      await tester.pumpWidget(Provider(
+        store: store,
+        child: HookBuilder(
+          builder: (context) {
+            final actions = useReduxActions<CounterActions>();
+            useReduxStateOnDidChangeEffect<Counter, Counter>((s) => s, (s) {
+              didChange++;
+            });
+
+            return Container(
+              child: Column(
+                children: <Widget>[
+                  RaisedButton(
+                    onPressed: actions.increment,
+                    child: new Text('Increment $didChange'),
+                    key: incrementButtonKey,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ));
+      expect(didChange, 0);
+      expect(tester.firstWidget<Text>(find.byType(Text)).data, 'Increment 0');
+
+      await tester.tap(find.byKey(incrementButtonKey));
+      await tester.pump();
+      expect(didChange, 1);
+      expect(tester.firstWidget<Text>(find.byType(Text)).data, 'Increment 0');
+
+      await tester.tap(find.byKey(incrementButtonKey));
+      await tester.pump();
+      expect(didChange, 2);
+      expect(tester.firstWidget<Text>(find.byType(Text)).data, 'Increment 0');
+    });
+  });
+
+  group('useReduxStateCallbacksEffect', () {
+    testWidgets('correct number of callback', (WidgetTester tester) async {
+      int didChange = 0;
+
+      await tester.pumpWidget(Provider(
+        store: store,
+        child: HookBuilder(
+          builder: (context) {
+            final actions = useReduxActions<CounterActions>();
+            useReduxStateEffect<Counter, Counter>((s) => s, onInitial: (s) {
+              didChange++;
+            }, onDidChange: (s) {
+              didChange++;
+            });
+
+            return Container(
+              child: Column(
+                children: <Widget>[
+                  RaisedButton(
+                    onPressed: actions.increment,
+                    child: new Text('Increment'),
+                    key: incrementButtonKey,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ));
+      expect(didChange, 1);
+
+      await tester.tap(find.byKey(incrementButtonKey));
+      await tester.pump();
+      expect(didChange, 2);
+
+      await tester.tap(find.byKey(incrementButtonKey));
+      await tester.pump();
+      expect(didChange, 3);
+    });
+
+    testWidgets('callback order', (WidgetTester tester) async {
+      List<String> order = [];
+
+      Widget widget() {
+        return Provider(
+          store: store,
+          child: HookBuilder(
+            builder: (context) {
+              final actions = useReduxActions<CounterActions>();
+              useReduxStateEffect<Counter, Counter>((s) => s, onInitial: (s) {
+                order.add('initial');
+              }, onDidChange: (s) {
+                order.add('didChange');
+              }, onDispose: () {
+                order.add('dispose');
+              });
+
+              return Container(
+                child: Column(
+                  children: <Widget>[
+                    RaisedButton(
+                      onPressed: actions.increment,
+                      child: new Text('Increment'),
+                      key: incrementButtonKey,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      }
+
+      await tester.pumpWidget(widget());
+      expect(order, ['initial']);
+
+      await tester.tap(find.byKey(incrementButtonKey));
+      await tester.pump();
+      expect(order, ['initial', 'didChange']);
+
+      await tester.tap(find.byKey(incrementButtonKey));
+      await tester.pump();
+      expect(order, ['initial', 'didChange', 'didChange']);
+
+      await tester.pumpWidget(SizedBox());
+      expect(order, ['initial', 'didChange', 'didChange', 'dispose']);
+
+      await tester.pumpWidget(widget());
+      expect(
+          order, ['initial', 'didChange', 'didChange', 'dispose', 'initial']);
+
+      await tester.pump();
+      expect(
+          order, ['initial', 'didChange', 'didChange', 'dispose', 'initial']);
+
+      await tester.tap(find.byKey(incrementButtonKey));
+      await tester.pumpWidget(widget());
+      expect(order, [
+        'initial',
+        'didChange',
+        'didChange',
+        'dispose',
+        'initial',
+        'didChange'
+      ]);
+
+      await tester.pumpWidget(SizedBox());
+      expect(order, [
+        'initial',
+        'didChange',
+        'didChange',
+        'dispose',
+        'initial',
+        'didChange',
+        'dispose'
+      ]);
+    });
+
+    testWidgets('doest not rebuild widget', (WidgetTester tester) async {
+      int numBuilds = 0;
+
+      await tester.pumpWidget(Provider(
+        store: store,
+        child: HookBuilder(
+          builder: (context) {
+            numBuilds++;
+            final actions = useReduxActions<CounterActions>();
+            useReduxStateEffect<Counter, Counter>((s) => s,
+                onInitial: (s) {}, onDidChange: (s) {});
+
+            return Container(
+              child: Column(
+                children: <Widget>[
+                  RaisedButton(
+                    onPressed: actions.increment,
+                    child: new Text('Increment'),
+                    key: incrementButtonKey,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ));
+      expect(numBuilds, 1);
+
+      await tester.tap(find.byKey(incrementButtonKey));
+      await tester.pump();
+      expect(numBuilds, 1);
+
+      await tester.tap(find.byKey(incrementButtonKey));
+      await tester.pump();
+      expect(numBuilds, 1);
     });
   });
 }
