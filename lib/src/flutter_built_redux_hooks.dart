@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:built_redux/built_redux.dart';
-import 'package:built_value/built_value.dart' as BV;
+import 'package:built_value/built_value.dart' as bv;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' hide Store;
 import 'package:provider/provider.dart';
@@ -10,9 +10,16 @@ import 'package:provider/provider.dart';
 /// Make this the root Widget of your app.
 /// To connect to the provided store use [useReduxState].
 class ReduxProvider extends StatelessWidget {
+  /// Redux [Store]
   final Store store;
+
+  /// Child
   final Widget child;
+
+  /// Should [Store] be disposed if a new [Store] was passed
   final bool autoDisposeStore;
+
+  /// Creates [ReduxProvider] and passes store down to all descendants
   ReduxProvider(
       {Key key,
       @required this.store,
@@ -20,6 +27,7 @@ class ReduxProvider extends StatelessWidget {
       this.autoDisposeStore = true})
       : super(key: key);
 
+  /// Get Redux Store from context
   static Store of(BuildContext context) => Provider.of<Store>(context);
 
   @override
@@ -29,7 +37,7 @@ class ReduxProvider extends StatelessWidget {
     }
     return HookProvider<Store>(
       hook: () {
-        useEffect(() => () => store.dispose(), [store]);
+        useEffect(() => store.dispose, <dynamic>[store]);
         return store;
       },
       child: child,
@@ -39,7 +47,7 @@ class ReduxProvider extends StatelessWidget {
 
 Store _useReduxStore() {
   final context = useContext();
-  final Store store = ReduxProvider.of(context);
+  final store = ReduxProvider.of(context);
 
   assert(store != null,
       'Store was not found, make sure ReduxProvider is an ancestor of this hook');
@@ -49,8 +57,8 @@ Store _useReduxStore() {
 
 /// Returns the store provided by [ReduxProvider].
 Store<State, StateBuilder, Actions> useReduxStore<
-    State extends BV.Built<State, StateBuilder>,
-    StateBuilder extends BV.Builder<State, StateBuilder>,
+    State extends bv.Built<State, StateBuilder>,
+    StateBuilder extends bv.Builder<State, StateBuilder>,
     Actions extends ReduxActions>() {
   final store = _useReduxStore();
 
@@ -78,25 +86,25 @@ Actions useReduxActions<Actions extends ReduxActions>() {
 /// return the [SubState] whenever the Widget is rebuilding and not when the
 /// [SubState] changes.
 SubState useReduxState<State, SubState>(SubState connect(State state),
-    {ignoreChange = false}) {
+    {bool ignoreChange = false}) {
   final store = _useReduxStore();
 
   assert(store.state is State,
       'State was not found, make sure generic State matches built_redux store.state');
 
-  SubState _state = connect(store.state as State);
+  final _state = connect(store.state as State);
 
   if (true == ignoreChange) {
     return _state;
   }
 
-  Stream<SubState> stream = useMemoized(
+  final stream = useMemoized(
       () => store.substateStream((state) {
             return connect(state as State);
           }).map((s) => s.next),
-      [store]);
+      <dynamic>[store]);
 
-  AsyncSnapshot<SubState> data = useStream(
+  final data = useStream(
     stream,
     initialData: _state,
   );
