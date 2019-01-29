@@ -47,13 +47,14 @@ class AddTodo extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final actions = useReduxActions<AppActions>();
+    final todos = useReduxState<AppState, BuiltList<Todo>>((s) => s.todos);
     return Column(
       children: <Widget>[
 //        TextFormField(),
         RaisedButton(
           child: Text('Add Todo'),
           onPressed: () {
-            final todo = Todo((b) => b.title = 'New Todo');
+            final todo = Todo((b) => b.title = 'New Todo ${todos.length}');
             actions.addTodo(todo);
           },
         ),
@@ -66,6 +67,18 @@ class TodosList extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final todos = useReduxState<AppState, BuiltList<Todo>>((s) => s.todos);
+    useReduxStateOnInitialBuildEffect<AppState, BuiltList<Todo>>((s) => s.todos,
+        (s) {
+      Scaffold.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('Initial Snackbar')));
+    });
+    useReduxStateOnDidChangeEffect<AppState, BuiltList<Todo>>((s) => s.todos,
+        (s) {
+      Scaffold.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(s.last.title)));
+    });
 
     return ListView.builder(
         primary: false,
