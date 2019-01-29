@@ -70,9 +70,11 @@ SubState useReduxState<State, SubState>(SubState connect(State state),
     return _state;
   }
 
-  Stream<SubState> stream = useMemoized(() => store.substateStream((state) {
-        return connect(state as State);
-      }).map((s) => s.next));
+  Stream<SubState> stream = useMemoized(
+      () => store.substateStream((state) {
+            return connect(state as State);
+          }).map((s) => s.next),
+      [store]);
 
   AsyncSnapshot<SubState> data = useStream(
     stream,
