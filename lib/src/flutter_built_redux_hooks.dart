@@ -2,29 +2,47 @@ import 'package:built_redux/built_redux.dart';
 import 'package:built_value/built_value.dart' as BV;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' hide Store;
+import 'package:provider/provider.dart';
 
 /// Provides a the Redux [Store] to all descendants of this Widget.
 /// Make this the root Widget of your app.
 /// To connect to the provided store use [useReduxState].
-class ReduxProvider extends InheritedWidget {
-  ReduxProvider({Key key, @required this.store, @required Widget child})
-      : super(key: key, child: child);
-
+class ReduxProvider extends StatelessWidget {
   final Store store;
+  final Widget child;
+  final bool autoDisposeStore;
+  ReduxProvider(
+      {Key key,
+      @required this.store,
+      @required this.child,
+      this.autoDisposeStore = true})
+      : super(key: key);
+
+  static Store of(BuildContext context) => Provider.of<Store>(context);
 
   @override
-  bool updateShouldNotify(ReduxProvider old) => store != old.store;
+  Widget build(BuildContext context) {
+    if (false == autoDisposeStore) {
+      return Provider<Store>(value: store, child: child);
+    }
+    return HookProvider<Store>(
+      hook: () {
+        useEffect(() => () => store.dispose(), [store]);
+        return store;
+      },
+      child: child,
+    );
+  }
 }
 
 Store _useReduxStore() {
   final context = useContext();
-  final ReduxProvider reduxProvider =
-      context.inheritFromWidgetOfExactType(ReduxProvider);
+  final Store store = ReduxProvider.of(context);
 
-  assert(reduxProvider != null,
+  assert(store != null,
       'Store was not found, make sure ReduxProvider is an ancestor of this hook');
 
-  return reduxProvider.store;
+  return store;
 }
 
 /// Returns the store provided by [ReduxProvider].

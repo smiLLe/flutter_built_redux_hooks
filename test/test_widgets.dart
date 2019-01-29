@@ -20,6 +20,7 @@ class Provider extends StatelessWidget {
         home: ReduxProvider(
       store: store,
       child: child,
+      autoDisposeStore: false,
     ));
   }
 }

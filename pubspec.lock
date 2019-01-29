@@ -186,6 +186,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.6+9"
+  functional_widget_annotation:
+    dependency: transitive
+    description:
+      name: functional_widget_annotation
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.0"
   glob:
     dependency: transitive
     description:
@@ -347,6 +354,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.4.0"
+  provider:
+    dependency: "direct main"
+    description:
+      name: provider
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.3.0"
   pub_semver:
     dependency: transitive
     description:
